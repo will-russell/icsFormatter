@@ -55,37 +55,44 @@ var icsFormatter = function() {
             var start_date = new Date(begin);
             var end_date = new Date(stop);
 
+            // apply timezone to start_date and end_date so we have "UTC" time values for getHours(), etc.
+            start_date.setMinutes(start_date.getMinutes() + start_date.getTimezoneOffset());
+            end_date.setMinutes(end_date.getMinutes() + end_date.getTimezoneOffset());
+
             var start_year = ("0000" + (start_date.getFullYear().toString())).slice(-4);
             var start_month = ("00" + ((start_date.getMonth() + 1).toString())).slice(-2);
             var start_day = ("00" + ((start_date.getDate()).toString())).slice(-2);
             var start_hours = ("00" + (start_date.getHours().toString())).slice(-2);
             var start_minutes = ("00" + (start_date.getMinutes().toString())).slice(-2);
-            var start_seconds = ("00" + (start_date.getMinutes().toString())).slice(-2);
+            var start_seconds = ("00" + (start_date.getSeconds().toString())).slice(-2);
 
             var end_year = ("0000" + (end_date.getFullYear().toString())).slice(-4);
             var end_month = ("00" + ((end_date.getMonth() + 1).toString())).slice(-2);
             var end_day = ("00" + ((end_date.getDate()).toString())).slice(-2);
             var end_hours = ("00" + (end_date.getHours().toString())).slice(-2);
             var end_minutes = ("00" + (end_date.getMinutes().toString())).slice(-2);
-            var end_seconds = ("00" + (end_date.getMinutes().toString())).slice(-2);
+            var end_seconds = ("00" + (end_date.getSeconds().toString())).slice(-2);
 
             // Since some calendars don't add 0 second events, we need to remove time if there is none...
-            var start_time = '';
-            var end_time = '';
-            if (start_minutes + start_seconds + end_minutes + end_seconds !== 0) {
-                start_time = 'T' + start_hours + start_minutes + start_seconds;
-                end_time = 'T' + end_hours + end_minutes + end_seconds;
+            var start = '';
+            var end = '';
+            if (start_hours + start_minutes + start_seconds + end_hours + end_minutes + end_seconds !== 0) {
+                // time is not midnight to midnight - so we need to include the times and use them
+                start = ':' + start_year + start_month + start_day 'T' + start_hours + start_minutes + start_seconds + 'Z';
+                end = ':' + end_year + end_month + end_day + 'T' + end_hours + end_minutes + end_seconds + 'Z';
             }
-
-            var start = start_year + start_month + start_day + start_time;
-            var end = end_year + end_month + end_day + end_time;
+            else {
+                // this is an all day event - time is not needed (will be ignored by "VALUE=DATE" sub-statement)
+                start = ';VALUE=DATE:' + start_year + start_month + start_day;
+                end = ';VALUE=DATE:' + end_year + end_month + end_day;
+            }
 
             var calendarEvent = [
                 'BEGIN:VEVENT',
                 'CLASS:PUBLIC',
                 'DESCRIPTION:' + description,
-                'DTSTART;VALUE=DATE:' + start,
-                'DTEND;VALUE=DATE:' + end,
+                'DTSTART' + start,
+                'DTEND' + end,
                 'LOCATION:' + location,
                 'SUMMARY;LANGUAGE=en-us:' + subject,
                 'TRANSP:TRANSPARENT',
